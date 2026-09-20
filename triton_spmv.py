@@ -22,7 +22,7 @@ import triton.language as tl
 #
 # =============================================================================
 
-@triton.jit
+
 def ptx_fma_f32(x, y, acc):
     return tl.inline_asm_elementwise(
         asm="""
@@ -34,46 +34,6 @@ def ptx_fma_f32(x, y, acc):
         is_pure=True,
         pack=1,
     )
-
-
-@triton.jit
-def ptx_cvt_f16_to_f32(x):
-    # cvt.rn.f32.f16: round-to-nearest-even upconvert
-    return tl.inline_asm_elementwise(
-        asm="""
-        cvt.rn.f32.f16 $0, $1;
-        """,
-        constraints="=f,h",
-        args=[x],
-        dtype=tl.float32,
-        is_pure=True,
-        pack=1,
-    )
-
-
-@triton.jit
-def ptx_cvt_bf16_to_f32(x):
-    return tl.inline_asm_elementwise(
-        asm="""
-        cvt.rn.f32.bf16 $0, $1;
-        """,
-        constraints="=f,h",
-        args=[x],
-        dtype=tl.float32,
-        is_pure=True,
-        pack=1,
-    )
-
-
-@triton.jit
-def to_f32(x):
-    if x.dtype == tl.float16:
-        return ptx_cvt_f16_to_f32(x)
-    elif x.dtype == tl.bfloat16:
-        return ptx_cvt_bf16_to_f32(x)
-    else:
-        return x.to(tl.float32)
-
 
 # -----------------------------------------------------------------------------
 # Generic path: conservative configs suitable for other NVIDIA GPUs.
@@ -132,19 +92,19 @@ def nmsparse_generic_kernel(
                 other=0,
             ).to(tl.int32)
 
-            x_i = to_f32(tl.load(
+            x_i = tl.load(
                 vec_ptr + (vec_base + idx_i) * vec_stride,
                 mask=group_mask,
                 other=0.0,
-            ))
+            ).to(tl.float32)
 
-            w_i = to_f32(tl.load(
+            w_i = tl.load(
                 mat_data_ptr
                 + row * mat_stride_row
                 + (base + i) * mat_stride_col,
                 mask=row_mask & group_mask,
                 other=0.0,
-            ))
+            ).to(tl.float32)
 
             acc = ptx_fma_f32(w_i, x_i, acc)
 
@@ -159,25 +119,9 @@ def nmsparse_generic_kernel(
 # -----------------------------------------------------------------------------
 # A100 / SM80 path.
 # -----------------------------------------------------------------------------
-#
-# Why retain atomics instead of collapsing groups into one program?
-# Qwen decode has output sizes of only ~1K-3K. A no-atomic 1-D grid would create
-# very few CTAs, while an SM80 A100 has many SMs. Splitting groups keeps enough
-# CTAs to occupy the GPU. Larger GPP reduces atomic traffic without collapsing
-# parallelism too aggressively.
-# -----------------------------------------------------------------------------
+
 @triton.autotune(
     configs=[
-        triton.Config({"BLOCK_ROWS": 32, "GROUPS_PER_PROGRAM": 1}, num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 64, "GROUPS_PER_PROGRAM": 1}, num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 128, "GROUPS_PER_PROGRAM": 1}, num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 256, "GROUPS_PER_PROGRAM": 1}, num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 64, "GROUPS_PER_PROGRAM": 2}, num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 128, "GROUPS_PER_PROGRAM": 2}, num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 256, "GROUPS_PER_PROGRAM": 2}, num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 64, "GROUPS_PER_PROGRAM": 4}, num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 128, "GROUPS_PER_PROGRAM": 4}, num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_ROWS": 256, "GROUPS_PER_PROGRAM": 4}, num_warps=4, num_stages=2),
         triton.Config({"BLOCK_ROWS": 64,  "GROUPS_PER_PROGRAM": 2},  num_warps=4, num_stages=2),
         triton.Config({"BLOCK_ROWS": 128, "GROUPS_PER_PROGRAM": 2},  num_warps=4, num_stages=2),
         triton.Config({"BLOCK_ROWS": 256, "GROUPS_PER_PROGRAM": 2},  num_warps=8, num_stages=2),
@@ -213,8 +157,6 @@ def nmsparse_a100_sm80_kernel(
     pid_group = tl.program_id(1)
 
     row_start = pid_row * BLOCK_ROWS
-    # All A100 configs use BLOCK_ROWS >= 64; 128/256 are the intended fast
-    # cases. The hint is valid because h is required to be divisible by 128.
     row = row_start + tl.arange(0, BLOCK_ROWS)
     row_mask = row < h
 
@@ -235,23 +177,23 @@ def nmsparse_a100_sm80_kernel(
                 cache_modifier=".ca",
             ).to(tl.int32)
 
-						# As activations are often reused, hence with .ca cache modifier for loading within the L1 cache.
-            x_i = to_f32(tl.load(
+            # As activations are often reused, hence with .ca cache modifier for loading within the L1 cache.
+            x_i = tl.load(
                 vec_ptr + (vec_base + idx_i) * vec_stride,
                 mask=group_mask,
                 other=0.0,
                 cache_modifier=".ca",
-            ))
+            ).to(tl.float32)
 
-					  # Weights are loaded with .cg modifier to avoid loading within L1 cache (L2 and higher).
-            w_i = to_f32(tl.load(
+            # Weights are loaded with .cg modifier to avoid loading within L1 cache (L2 and higher).
+            w_i = tl.load(
                 mat_data_ptr
                 + row * mat_stride_row
                 + (base + i) * mat_stride_col,
                 mask=row_mask & group_mask,
                 other=0.0,
                 cache_modifier=".cg",
-            ))
+            ).to(tl.float32)
 
             acc = ptx_fma_f32(w_i, x_i, acc)
 
@@ -369,9 +311,6 @@ def nmsparse_spmv_forward_triton_ptx(
 
 __all__ = [
     "ptx_fma_f32",
-    "ptx_cvt_f16_to_f32",
-    "ptx_cvt_bf16_to_f32",
-    "to_f32",
     "nmsparse_generic_kernel",
     "nmsparse_a100_sm80_kernel",
     "nmsparse_spmv_forward_triton_ptx",
