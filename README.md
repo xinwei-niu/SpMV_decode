@@ -39,11 +39,11 @@ Each program processes a block of output rows and multiple N groups:
 * `program_id(0)` → output rows
 * `program_id(1)` → sparse groups
 
-Within the kernel, partial results are accumulated with relaxed atomics. FP32 FMA via ([inline PTX](https://triton-lang.org/main/python-api/generated/triton.language.inline_asm_elementwise.html)) `fma.rn.f32` is used for accumulation, with the final result converted back to the input dtype.
+Within the kernel, partial results are accumulated with relaxed atomics. FP32 FMA via [inline PTX](https://triton-lang.org/main/python-api/generated/triton.language.inline_asm_elementwise.html) `fma.rn.f32` is used for accumulation, with the final result converted back to the input dtype.
 
 ### A100 / SM80 Optimization
 
-For A100, the kernel uses ([`cache_modifier`](https://github.com/xinwei-niu/SpMV_decode/blob/main/triton_spmv.py#186)) to apply different cache hints:
+For A100, the kernel uses ([`cache_modifier`](https://github.com/xinwei-niu/SpMV_decode/blob/main/triton_spmv.py#186)) ([reference](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#cache-operators)) to apply different cache hints:
 
 | Tensor                  | Cache hint | Rationale           |
 | :---------------------- | :--------: | :------------------ |
@@ -105,27 +105,13 @@ End-to-end results show consistent decoding speedups across Llama 3.1 8B, Qwen3 
 
 Performance is not monotonic with N:M group size. Across these models, the strongest results occur in the intermediate range of **8:16–32:64**, while larger grouping factors show a gradual reduction in speedup.
 
-## Qwen3-0.6B Benchmark
 
-Use a pre-downloaded Hugging Face checkpoint by placing it at
-`models/qwen3-0.6b` or overriding `MODEL_DIR`:
-
-```bash
-MODEL_SOURCE=local \
-MODEL_DIR=/path/to/Qwen3-0.6B \
-NM_CONFIGS="0 4 8 16 32 64 128 256" \
-./scripts/run_bench_qwen_0_6b_fp16.sh
-```
-
-The checkpoint directory must contain `config.json`, the model weights, and
-the tokenizer files. To use the Hugging Face repository instead, set
-`MODEL_SOURCE=hf` and optionally override `HF_MODEL_ID`.
 
 ## TODO
 
 * [x] Release the E2E benchmark code.
 * [x] Release benchmark scripts for Llama 3.1 8B, Qwen3 14B, and Qwen3 32B.
-* [ ] Add scripts for reproducing the reported decode-latency results.
+* [x] Add scripts for reproducing the reported decode-latency results.
 * [ ] Add benchmark configuration and command-line examples.
 * [x] Add standalone kernel microbenchmark scripts.
 * [ ] Add result parsing and table-generation scripts.
