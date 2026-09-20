@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spmv-decode"
+version = "0.1.0"
+description = "CUDA Triton kernels and benchmarks for sparse language-model decoding"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "accelerate==1.13.0",
+    "huggingface-hub>=0.34,<1",
+    "numpy==2.2.6",
+    "safetensors==0.7.0",
+    "torch==2.9.1",
+    "transformers==4.57.3",
+    "triton==3.5.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<9",
+]

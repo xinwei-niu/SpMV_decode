@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+src/spmv/__init__.py
+src/spmv/nmsparse_linear.py
+src/spmv/nmsparse_op.py
+src/spmv_decode.egg-info/PKG-INFO
+src/spmv_decode.egg-info/SOURCES.txt
+src/spmv_decode.egg-info/dependency_links.txt
+src/spmv_decode.egg-info/requires.txt
+src/spmv_decode.egg-info/top_level.txt

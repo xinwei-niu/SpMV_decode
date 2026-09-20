@@ -1,3 +1,19 @@
+Metadata-Version: 2.4
+Name: spmv-decode
+Version: 0.1.0
+Summary: CUDA Triton kernels and benchmarks for sparse language-model decoding
+Requires-Python: <3.14,>=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: accelerate==1.13.0
+Requires-Dist: huggingface-hub<1,>=0.34
+Requires-Dist: numpy==2.2.6
+Requires-Dist: safetensors==0.7.0
+Requires-Dist: torch==2.9.1
+Requires-Dist: transformers==4.57.3
+Requires-Dist: triton==3.5.1
+Dynamic: license-file
+
 # SpMV Kernel for Efficient Pruned Model Decoding
 
 Kernel implementations for sparse Generalized Matrix-Vector Multiplication (GEMV) targeting efficient decoding with N:M semi-structured pruned language models.
@@ -123,9 +139,9 @@ the tokenizer files. To use the Hugging Face repository instead, set
 
 ## TODO
 
-* [x] Release the E2E benchmark code.
-* [x] Release benchmark scripts for Llama 3.1 8B, Qwen3 14B, and Qwen3 32B.
+* [ ] Release the E2E benchmark code.
+* [ ] Release benchmark scripts for Llama 3.1 8B, Qwen3 14B, and Qwen3 32B.
 * [ ] Add scripts for reproducing the reported decode-latency results.
 * [ ] Add benchmark configuration and command-line examples.
-* [x] Add standalone kernel microbenchmark scripts.
+* [ ] Add standalone kernel microbenchmark scripts.
 * [ ] Add result parsing and table-generation scripts.

@@ -1,0 +1,25 @@
+.venv/
+.*
+!.gitignore
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local model checkpoints and benchmark outputs.
+checkpoint/
+models/
+runs/
+results/
+
+# Large model and archive files.
+*.bin
+*.ckpt
+*.onnx
+*.pt
+*.pth
+*.safetensors
+*.tar
+*.tar.gz
+*.zip

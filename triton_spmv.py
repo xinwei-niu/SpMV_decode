@@ -21,7 +21,7 @@ import triton.language as tl
 #
 # =============================================================================
 
-
+@triton.jit
 def ptx_fma_f32(x, y, acc):
     return tl.inline_asm_elementwise(
         asm="""
@@ -121,6 +121,16 @@ def nmsparse_generic_kernel(
 
 @triton.autotune(
     configs=[
+        triton.Config({"BLOCK_ROWS": 32, "GROUPS_PER_PROGRAM": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 64, "GROUPS_PER_PROGRAM": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 128, "GROUPS_PER_PROGRAM": 1}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 256, "GROUPS_PER_PROGRAM": 1}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 64, "GROUPS_PER_PROGRAM": 2}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 128, "GROUPS_PER_PROGRAM": 2}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 256, "GROUPS_PER_PROGRAM": 2}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 64, "GROUPS_PER_PROGRAM": 4}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 128, "GROUPS_PER_PROGRAM": 4}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_ROWS": 256, "GROUPS_PER_PROGRAM": 4}, num_warps=4, num_stages=2),
         triton.Config({"BLOCK_ROWS": 64,  "GROUPS_PER_PROGRAM": 2},  num_warps=4, num_stages=2),
         triton.Config({"BLOCK_ROWS": 128, "GROUPS_PER_PROGRAM": 2},  num_warps=4, num_stages=2),
         triton.Config({"BLOCK_ROWS": 256, "GROUPS_PER_PROGRAM": 2},  num_warps=8, num_stages=2),
@@ -213,7 +223,7 @@ def _is_a100_sm80(device: torch.device) -> bool:
     if device.type != "cuda":
         return False
     major, minor = torch.cuda.get_device_capability(device)
-    return (major, minor) == (8, 0)
+    return (major, minor) == (8, 0) or (major, minor) == (8, 6)  
 
 
 def nmsparse_spmv_forward_triton_ptx(
