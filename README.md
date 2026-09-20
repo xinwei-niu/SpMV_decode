@@ -39,11 +39,11 @@ Each program processes a block of output rows and multiple N groups:
 * `program_id(0)` → output rows
 * `program_id(1)` → sparse groups
 
-Within the kernel, partial results are accumulated with relaxed atomics. FP32 FMA via inline PTX `fma.rn.f32` is used for accumulation, with the final result converted back to the input dtype.
+Within the kernel, partial results are accumulated with relaxed atomics. FP32 FMA via ([inline PTX](https://triton-lang.org/main/python-api/generated/triton.language.inline_asm_elementwise.html)) `fma.rn.f32` is used for accumulation, with the final result converted back to the input dtype.
 
 ### A100 / SM80 Optimization
 
-For A100, the kernel uses `cache_modifier` to apply different cache hints:
+For A100, the kernel uses ([`cache_modifier`](https://github.com/xinwei-niu/SpMV_decode/blob/main/triton_spmv.py#186)) to apply different cache hints:
 
 | Tensor                  | Cache hint | Rationale           |
 | :---------------------- | :--------: | :------------------ |
