@@ -17,11 +17,11 @@ Each program processes a block of output rows and multiple N groups:
 - `program_id(0)` → output rows
 - `program_id(1)` → sparse groups
 
-Partial results are accumulated with relaxed atomics, while for accumulation, we utilize FP32 FMA via inline PTX `fma.rn.f32` for faster matrix multiplication and accumulation with the final result converted back to the input dtype.
+Within the kernel, partial results are accumulated with relaxed atomics, while for accumulation, we utilize FP32 FMA via inline PTX `fma.rn.f32` for faster matrix multiplication and accumulation with the final result converted back to the input dtype.
 
 ### A100 / SM80 Optimization
 
-For the specified A100 optimization, we leverage the `cache_modifier` by hinting activations and weights over different cache configurations: 
+For the specified A100 optimization, we leverage the ([`cache_modifier`](https://github.com/xinwei-niu/SpMV_decode/blob/main/triton_spmv.py#177)) by hinting activations and weights over different cache configurations: 
 
 | Tensor           | Cache hint | Rationale                    |
 | :--------------- | :--------: | :---------------------------- |
