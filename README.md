@@ -6,7 +6,7 @@ Kernel implementations for sparse Generalized Matrix-Vector Multiplication (GEMV
 
 This project provides Triton PTX kernels for accelerating N:M sparse
 matrix-vector multiplication during LLM decoding. It includes reproducible
-benchmarks for Llama 3.1, Qwen3, and Qwen3-0.6B, with local Hugging Face
+benchmarks for Llama 3.1, Qwen3 14B and 32B, with local Hugging Face
 checkpoint support and `uv`-based setup.
 
 ```bash
