@@ -16,7 +16,6 @@ import triton.language as tl
 # A100-specific choices:
 #   * SM80 runtime dispatch
 #   * FP32 FMA through inline PTX
-#   * inline PTX cvt for fp16/bf16 -> fp32 upcast (explicit rounding mode)
 #   * .cg for streamed sparse weights (avoid L1 pollution)
 #   * .ca for the tiny/reused activation vector (keep in L1)
 #
