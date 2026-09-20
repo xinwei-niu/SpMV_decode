@@ -2,6 +2,33 @@
 
 Kernel implementations for sparse Generalized Matrix-Vector Multiplication (GEMV) targeting efficient decoding with N:M semi-structured pruned language models.
 
+## TL;DR
+
+This project provides Triton PTX kernels for accelerating N:M sparse
+matrix-vector multiplication during LLM decoding. It includes reproducible
+benchmarks for Llama 3.1, Qwen3, and Qwen3-0.6B, with local Hugging Face
+checkpoint support and `uv`-based setup.
+
+```bash
+uv sync
+MODEL_SOURCE=local \
+MODEL_DIR=/path/to/Qwen3-14B \
+NM_CONFIGS=0 \
+uv run run_bench_qwen_14b_fp16.sh
+```
+
+## Table of Contents
+
+- [Setup with uv](#setup-with-uv)
+- [Kernel](#kernel)
+	- [A100 / SM80 Optimization](#a100--sm80-optimization)
+- [E2E Per-Decoded-Token Latency](#e2e-per-decoded-token-latency)
+	- [Llama 3.1 8B](#llama-31-8b)
+	- [Qwen3 14B](#qwen3-14b)
+	- [Qwen3 32B](#qwen3-32b)
+- [Summary](#summary)
+- [TODO](#todo)
+
 ## Setup with uv
 
 Create the project environment and install the locked dependencies:
